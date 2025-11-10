@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardWorkspaceRouteRouteImport } from './routes/_dashboard/workspace/route'
 import { Route as DashboardWorkspaceIndexRouteImport } from './routes/_dashboard/workspace/index'
+import { Route as DashboardWorkspaceAccountRouteImport } from './routes/_dashboard/workspace/account'
 
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
@@ -40,18 +41,26 @@ const DashboardWorkspaceIndexRoute = DashboardWorkspaceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardWorkspaceRouteRoute,
 } as any)
+const DashboardWorkspaceAccountRoute =
+  DashboardWorkspaceAccountRouteImport.update({
+    id: '/account',
+    path: '/account',
+    getParentRoute: () => DashboardWorkspaceRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/workspace': typeof DashboardWorkspaceRouteRouteWithChildren
+  '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace/': typeof DashboardWorkspaceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
+  '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace': typeof DashboardWorkspaceIndexRoute
 }
 export interface FileRoutesById {
@@ -60,19 +69,27 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/_dashboard/workspace': typeof DashboardWorkspaceRouteRouteWithChildren
+  '/_dashboard/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/_dashboard/workspace/': typeof DashboardWorkspaceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/todos' | '/workspace' | '/workspace/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/todos'
+    | '/workspace'
+    | '/workspace/account'
+    | '/workspace/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/todos' | '/workspace'
+  to: '/' | '/login' | '/todos' | '/workspace/account' | '/workspace'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/todos'
     | '/_dashboard/workspace'
+    | '/_dashboard/workspace/account'
     | '/_dashboard/workspace/'
   fileRoutesById: FileRoutesById
 }
@@ -120,15 +137,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWorkspaceIndexRouteImport
       parentRoute: typeof DashboardWorkspaceRouteRoute
     }
+    '/_dashboard/workspace/account': {
+      id: '/_dashboard/workspace/account'
+      path: '/account'
+      fullPath: '/workspace/account'
+      preLoaderRoute: typeof DashboardWorkspaceAccountRouteImport
+      parentRoute: typeof DashboardWorkspaceRouteRoute
+    }
   }
 }
 
 interface DashboardWorkspaceRouteRouteChildren {
+  DashboardWorkspaceAccountRoute: typeof DashboardWorkspaceAccountRoute
   DashboardWorkspaceIndexRoute: typeof DashboardWorkspaceIndexRoute
 }
 
 const DashboardWorkspaceRouteRouteChildren: DashboardWorkspaceRouteRouteChildren =
   {
+    DashboardWorkspaceAccountRoute: DashboardWorkspaceAccountRoute,
     DashboardWorkspaceIndexRoute: DashboardWorkspaceIndexRoute,
   }
 

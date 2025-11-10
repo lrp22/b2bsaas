@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { WorkspaceList } from "../_components/WorkspaceList";
 import { CreateWorkspace } from "../_components/CreateWorkspace";
+import UserMenu from "@/components/user-menu";
 
 export const Route = createFileRoute("/_dashboard/workspace")({
   component: WorkspaceLayout,
@@ -13,7 +14,11 @@ function WorkspaceLayout() {
         <div className="mt-4">
             <CreateWorkspace/>
         </div>
+        <div className="mt-auto">
+          <UserMenu/>
+        </div>
       </div>
+      <Outlet/>
     </div>
   );
 }
