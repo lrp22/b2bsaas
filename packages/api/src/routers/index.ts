@@ -13,6 +13,7 @@ export const appRouter = {
 		};
 	}),
 	todo: todoRouter,
+	workspace: wo
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

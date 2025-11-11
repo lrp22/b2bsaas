@@ -6,24 +6,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-const workspaces = [
-  {
-    id: "1",
-    name: "Bandibixa",
-    avatar: "BB",
-  },
-  {
-    id: "2",
-    name: "Poe",
-    avatar: "POE",
-  },
-  {
-    id: "3",
-    name: "Arc Raiders",
-    avatar: "ARC",
-  },
-];
+import { orpc } from "@/utils/orpc";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 const colorCombinations = [
   "bg-blue-500 hover:bg-blue-600 text-white",
@@ -47,27 +31,36 @@ const getWorkspaceColor = (id: string) => {
 };
 
 export function WorkspaceList() {
+  const {
+    data: { workspaces, currentWorspace },
+  } = useSuspenseQuery(orpc.workspace.list.queryOptions());
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-2">
-        {workspaces.map((ws) => (
-          <Tooltip key={ws.id}>
-            <TooltipTrigger asChild>
-              <Button
-                className={cn(
-                  "size-12 transition-all duration-200",
-                  getWorkspaceColor(ws.id)
-                )}
-                size="icon"
-              >
-                <span className="text-sm font-semibold">{ws.avatar} </span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>{ws.name} </p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+        {workspaces.map((ws) => {
+          const isActive = currentWorspace.orgCode === ws.id;
+          return (
+            <Tooltip key={ws.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  className={cn(
+                    "size-12 transition-all duration-200",
+                    getWorkspaceColor(ws.id),
+                    isActive ? "rounded-lg" : "rounded-xl hover:rounded-lg"
+                  )}
+                  size="icon"
+                >
+                  <span className="text-sm font-semibold">{ws.avatar} </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>
+                  {ws.name} {isActive && "(Current)"}{" "}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </TooltipProvider>
   );

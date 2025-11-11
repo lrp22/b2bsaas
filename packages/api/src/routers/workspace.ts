@@ -4,7 +4,7 @@ import { db } from "@b2bsaas/db";
 import { todo } from "@b2bsaas/db/schema/todo";
 import { protectedProcedure } from "../index";
 
-export const listWorkspaces = {
+export const worskpaceRouter = {
   getAll: protectedProcedure.handler(async () => {
     return await db.select().from(todo);
   }),
