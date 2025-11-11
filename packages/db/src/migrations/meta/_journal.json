@@ -8,6 +8,13 @@
       "when": 1762372721021,
       "tag": "0000_wealthy_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762899035733,
+      "tag": "0001_wise_moonstone",
+      "breakpoints": true
     }
   ]
 }

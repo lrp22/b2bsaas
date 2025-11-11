@@ -30,15 +30,30 @@ const getWorkspaceColor = (id: string) => {
   return colorCombinations[colorIndex];
 };
 
+// Define the workspace type based on what the backend returns
+type Workspace = {
+  id: string;
+  name: string;
+  avatar: string;
+};
+
+type WorkspaceListData = {
+  workspaces: Workspace[];
+  currentWorspace: Workspace; // Note: typo matches backend
+};
+
 export function WorkspaceList() {
-  const {
-    data: { workspaces, currentWorspace },
-  } = useSuspenseQuery(orpc.workspace.list.queryOptions());
+  // Changed from workspace.getAll to workspace.list
+  const { data } = useSuspenseQuery(orpc.workspace.list.queryOptions());
+
+  // Type assertion to help TypeScript understand the data structure
+  const { workspaces, currentWorspace } = data as WorkspaceListData;
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-2">
         {workspaces.map((ws) => {
-          const isActive = currentWorspace.orgCode === ws.id;
+          const isActive = currentWorspace?.id === ws.id;
           return (
             <Tooltip key={ws.id}>
               <TooltipTrigger asChild>
@@ -50,12 +65,12 @@ export function WorkspaceList() {
                   )}
                   size="icon"
                 >
-                  <span className="text-sm font-semibold">{ws.avatar} </span>
+                  <span className="text-sm font-semibold">{ws.avatar}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>
-                  {ws.name} {isActive && "(Current)"}{" "}
+                  {ws.name} {isActive && "(Current)"}
                 </p>
               </TooltipContent>
             </Tooltip>
