@@ -39,21 +39,20 @@ type Workspace = {
 
 type WorkspaceListData = {
   workspaces: Workspace[];
-  currentWorspace: Workspace; // Note: typo matches backend
+  currentWorkspace: Workspace; // Note: typo matches backend
 };
 
 export function WorkspaceList() {
-  // Changed from workspace.getAll to workspace.list
   const { data } = useSuspenseQuery(orpc.workspace.list.queryOptions());
 
   // Type assertion to help TypeScript understand the data structure
-  const { workspaces, currentWorspace } = data as WorkspaceListData;
+  const { workspaces, currentWorkspace } = data as WorkspaceListData;
 
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-2">
         {workspaces.map((ws) => {
-          const isActive = currentWorspace?.id === ws.id;
+          const isActive = currentWorkspace?.id === ws.id;
           return (
             <Tooltip key={ws.id}>
               <TooltipTrigger asChild>

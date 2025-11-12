@@ -4,6 +4,7 @@ import { db } from "@b2bsaas/db";
 import { member, organization } from "@b2bsaas/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { protectedProcedure } from "../index";
+import { z } from "zod";
 
 export const workspaceRouter = {
   // List organizations for the current user
@@ -37,7 +38,7 @@ export const workspaceRouter = {
 
     return {
       workspaces,
-      currentWorspace: currentWorkspace, // Note: keeping the typo to match frontend
+      currentWorkspace: currentWorkspace,
     };
   }),
 };
