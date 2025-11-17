@@ -15,6 +15,20 @@
       "when": 1762899035733,
       "tag": "0001_wise_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763408230131,
+      "tag": "0002_talented_lionheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763408247627,
+      "tag": "0003_hesitant_forgotten_one",
+      "breakpoints": true
     }
   ]
 }

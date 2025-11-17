@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardWorkspaceRouteRouteImport } from './routes/_dashboard/workspace/route'
 import { Route as DashboardWorkspaceIndexRouteImport } from './routes/_dashboard/workspace/index'
 import { Route as DashboardWorkspaceAccountRouteImport } from './routes/_dashboard/workspace/account'
+import { Route as DashboardWorkspaceWorkspaceIdRouteRouteImport } from './routes/_dashboard/workspace/$workspaceId/route'
+import { Route as DashboardWorkspaceWorkspaceIdIndexRouteImport } from './routes/_dashboard/workspace/$workspaceId/index'
 
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
@@ -47,14 +49,28 @@ const DashboardWorkspaceAccountRoute =
     path: '/account',
     getParentRoute: () => DashboardWorkspaceRouteRoute,
   } as any)
+const DashboardWorkspaceWorkspaceIdRouteRoute =
+  DashboardWorkspaceWorkspaceIdRouteRouteImport.update({
+    id: '/$workspaceId',
+    path: '/$workspaceId',
+    getParentRoute: () => DashboardWorkspaceRouteRoute,
+  } as any)
+const DashboardWorkspaceWorkspaceIdIndexRoute =
+  DashboardWorkspaceWorkspaceIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardWorkspaceWorkspaceIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/workspace': typeof DashboardWorkspaceRouteRouteWithChildren
+  '/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace/': typeof DashboardWorkspaceIndexRoute
+  '/workspace/$workspaceId/': typeof DashboardWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +78,7 @@ export interface FileRoutesByTo {
   '/todos': typeof TodosRoute
   '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace': typeof DashboardWorkspaceIndexRoute
+  '/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,8 +86,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/_dashboard/workspace': typeof DashboardWorkspaceRouteRouteWithChildren
+  '/_dashboard/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   '/_dashboard/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/_dashboard/workspace/': typeof DashboardWorkspaceIndexRoute
+  '/_dashboard/workspace/$workspaceId/': typeof DashboardWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,18 +98,28 @@ export interface FileRouteTypes {
     | '/login'
     | '/todos'
     | '/workspace'
+    | '/workspace/$workspaceId'
     | '/workspace/account'
     | '/workspace/'
+    | '/workspace/$workspaceId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/todos' | '/workspace/account' | '/workspace'
+  to:
+    | '/'
+    | '/login'
+    | '/todos'
+    | '/workspace/account'
+    | '/workspace'
+    | '/workspace/$workspaceId'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/todos'
     | '/_dashboard/workspace'
+    | '/_dashboard/workspace/$workspaceId'
     | '/_dashboard/workspace/account'
     | '/_dashboard/workspace/'
+    | '/_dashboard/workspace/$workspaceId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,16 +173,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWorkspaceAccountRouteImport
       parentRoute: typeof DashboardWorkspaceRouteRoute
     }
+    '/_dashboard/workspace/$workspaceId': {
+      id: '/_dashboard/workspace/$workspaceId'
+      path: '/$workspaceId'
+      fullPath: '/workspace/$workspaceId'
+      preLoaderRoute: typeof DashboardWorkspaceWorkspaceIdRouteRouteImport
+      parentRoute: typeof DashboardWorkspaceRouteRoute
+    }
+    '/_dashboard/workspace/$workspaceId/': {
+      id: '/_dashboard/workspace/$workspaceId/'
+      path: '/'
+      fullPath: '/workspace/$workspaceId/'
+      preLoaderRoute: typeof DashboardWorkspaceWorkspaceIdIndexRouteImport
+      parentRoute: typeof DashboardWorkspaceWorkspaceIdRouteRoute
+    }
   }
 }
 
+interface DashboardWorkspaceWorkspaceIdRouteRouteChildren {
+  DashboardWorkspaceWorkspaceIdIndexRoute: typeof DashboardWorkspaceWorkspaceIdIndexRoute
+}
+
+const DashboardWorkspaceWorkspaceIdRouteRouteChildren: DashboardWorkspaceWorkspaceIdRouteRouteChildren =
+  {
+    DashboardWorkspaceWorkspaceIdIndexRoute:
+      DashboardWorkspaceWorkspaceIdIndexRoute,
+  }
+
+const DashboardWorkspaceWorkspaceIdRouteRouteWithChildren =
+  DashboardWorkspaceWorkspaceIdRouteRoute._addFileChildren(
+    DashboardWorkspaceWorkspaceIdRouteRouteChildren,
+  )
+
 interface DashboardWorkspaceRouteRouteChildren {
+  DashboardWorkspaceWorkspaceIdRouteRoute: typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   DashboardWorkspaceAccountRoute: typeof DashboardWorkspaceAccountRoute
   DashboardWorkspaceIndexRoute: typeof DashboardWorkspaceIndexRoute
 }
 
 const DashboardWorkspaceRouteRouteChildren: DashboardWorkspaceRouteRouteChildren =
   {
+    DashboardWorkspaceWorkspaceIdRouteRoute:
+      DashboardWorkspaceWorkspaceIdRouteRouteWithChildren,
     DashboardWorkspaceAccountRoute: DashboardWorkspaceAccountRoute,
     DashboardWorkspaceIndexRoute: DashboardWorkspaceIndexRoute,
   }

@@ -47,7 +47,7 @@ export function CreateWorkspace() {
             Create a new workspace to get started
           </DialogDescription>
         </DialogHeader>
-        <CreateWorkspaceForm />
+        <CreateWorkspaceForm setOpen={setOpen} />
       </DialogContent>
     </Dialog>
   );

@@ -6,8 +6,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { orpc } from "@/utils/orpc";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { orpc, queryClient } from "@/utils/orpc";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const colorCombinations = [
   "bg-blue-500 hover:bg-blue-600 text-white",
@@ -24,52 +25,58 @@ const getWorkspaceColor = (id: string) => {
   const charSum = id
     .split("")
     .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-
   const colorIndex = charSum % colorCombinations.length;
-
   return colorCombinations[colorIndex];
 };
 
-// Define the workspace type based on what the backend returns
-type Workspace = {
-  id: string;
-  name: string;
-  avatar: string;
-};
-
-type WorkspaceListData = {
-  workspaces: Workspace[];
-  currentWorkspace: Workspace; // Note: typo matches backend
-};
-
 export function WorkspaceList() {
-  const { data } = useSuspenseQuery(orpc.workspace.list.queryOptions());
+  const {
+    data: { workspaces, currentWorkspace },
+  } = useSuspenseQuery(orpc.workspace.list.queryOptions());
 
-  // Type assertion to help TypeScript understand the data structure
-  const { workspaces, currentWorkspace } = data as WorkspaceListData;
+  const switchWorkspace = useMutation(
+    orpc.workspace.switch.mutationOptions({
+      onSuccess: () => {
+        toast.success("Switched workspace");
+        queryClient.invalidateQueries({
+          queryKey: orpc.workspace.list.queryOptions().queryKey,
+        });
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to switch workspace");
+      },
+    })
+  );
 
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-2">
         {workspaces.map((ws) => {
-          const isActive = currentWorkspace?.id === ws.id;
+          const isActive = currentWorkspace.id === ws.id;
+
           return (
             <Tooltip key={ws.id}>
               <TooltipTrigger asChild>
                 <Button
+                  onClick={() => {
+                    if (!isActive) {
+                      switchWorkspace.mutate({ organizationId: ws.id });
+                    }
+                  }}
                   className={cn(
                     "size-12 transition-all duration-200",
                     getWorkspaceColor(ws.id),
                     isActive ? "rounded-lg" : "rounded-xl hover:rounded-lg"
                   )}
                   size="icon"
+                  disabled={isActive || switchWorkspace.isPending}
                 >
-                  <span className="text-sm font-semibold">{ws.avatar}</span>
+                  <span className="text-sm font-semibold">{ws.avatar} </span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>
-                  {ws.name} {isActive && "(Current)"}
+                  {ws.name} {isActive && "(Current)"}{" "}
                 </p>
               </TooltipContent>
             </Tooltip>
