@@ -5,6 +5,7 @@ import { CreateNewChannel } from "./_components/CreateNewChannel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import { ChannelList } from "./_components/ChannelList";
+import { MembersList } from "./_components/MembersList";
 
 export const Route = createFileRoute("/_dashboard/workspace/$workspaceId")({
   component: WorkspaceLayout,
@@ -25,7 +26,7 @@ function WorkspaceLayout() {
           <CreateNewChannel/>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-2">
-					<Collapsible>
+					<Collapsible defaultOpen>
 						<CollapsibleTrigger className="[&[data-state=open]>svg]:rotate-90 flex items-center w-full justify-between px-2 py-1 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
 							Main
 							<ChevronRight className="size-4 transition-transform duration-200" />
@@ -33,6 +34,18 @@ function WorkspaceLayout() {
 
 						<CollapsibleContent>
 							<ChannelList />
+						</CollapsibleContent>
+					</Collapsible>
+				</div>
+        <div className="border-5 px-4 py-2 border-border">
+					<Collapsible defaultOpen>
+						<CollapsibleTrigger className="[&[data-state=open]>svg]:rotate-90 flex items-center w-full justify-between px-2 py-1 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+							Members
+							<ChevronRight className="size-4 transition-transform duration-200" />
+						</CollapsibleTrigger>
+
+						<CollapsibleContent>
+							<MembersList />
 						</CollapsibleContent>
 					</Collapsible>
 				</div>
