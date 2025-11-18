@@ -1,91 +1,87 @@
-//
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { orpc } from "@/utils/orpc";
 import { CreateNewChannel } from "./_components/CreateNewChannel";
+import { ChannelList } from "./_components/ChannelList";
+import { MembersList } from "./_components/MembersList";
+import { WorkspaceHeader } from "./_components/WorkspaceHeader";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronRight } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronRight } from "lucide-react";
-import { ChannelList } from "./_components/ChannelList";
-import { MembersList } from "./_components/MembersList";
-import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
-import { authClient } from "@/lib/auth-client";
-
-// A new component to display the workspace name, keeping our layout clean.
-function WorkspaceHeader() {
-  const { data: workspaceInfo, isLoading } = useQuery(
-    orpc.workspace.list.queryOptions()
-  );
-
-  if (isLoading) {
-    return <Skeleton className="h-6 w-3/4" />;
-  }
-
-  return (
-    <h2 className="text-xl font-bold truncate">
-      {workspaceInfo?.currentWorkspace?.name}
-    </h2>
-  );
-}
 
 export const Route = createFileRoute("/_dashboard/workspace/$workspaceId")({
   component: WorkspaceLayout,
-  beforeLoad: async ({ params }) => {
-    // Session check is still important
-    const session = await authClient.getSession();
-    if (!session.data) {
-      redirect({ to: "/login", throw: true });
-    }
-
-    // You can add a loader here later to pre-fetch channels if you want
-    // For now, the session check is enough.
+  beforeLoad: async ({ context, params }) => {
+    await context.queryClient.ensureQueryData(
+      orpc.channel.listByWorkspace.queryOptions({
+        input: { workspaceId: params.workspaceId },
+      })
+    );
   },
 });
 
 function WorkspaceLayout() {
   return (
-    // Main flex container for the whole screen
-    <div className="flex h-screen overflow-hidden">
-      {/* Secondary Sidebar ("The Gray Box") */}
-      <div className="w-72 bg-secondary flex flex-col p-4 border-r">
-        <WorkspaceHeader />
+    <div className="flex h-screen w-full bg-background overflow-hidden">
+      {/* Sidebar */}
+      <div className="flex w-64 flex-col border-r bg-muted/10">
+        {/* Workspace Header */}
+        <div className="flex h-14 shrink-0 items-center border-b px-4">
+          <WorkspaceHeader />
+        </div>
 
-        <hr className="my-4" />
-
-        {/* Channels Section */}
-        <Collapsible defaultOpen className="flex-grow flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <CollapsibleTrigger className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-              Channels
-              <ChevronRight className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-90" />
-            </CollapsibleTrigger>
+        {/* Main Content - Channels (Takes available space) */}
+        <ScrollArea className="flex-1 py-4">
+          {/* Add Channel Action */}
+          <div className="px-2 mb-6">
             <CreateNewChannel />
           </div>
-          <CollapsibleContent className="flex-grow overflow-y-auto">
-            <ChannelList />
-          </CollapsibleContent>
-        </Collapsible>
 
-        {/* Members Section */}
-        <Collapsible defaultOpen className="flex-shrink-0">
-          <CollapsibleTrigger className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground mt-4">
-            Members
-            <ChevronRight className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-90" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 overflow-y-auto max-h-48">
-            <MembersList />
-          </CollapsibleContent>
-        </Collapsible>
+          {/* Channels Section */}
+          <div className="mb-2">
+            <Collapsible defaultOpen className="group/channels">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between px-4 mb-1 group cursor-pointer select-none">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
+                    Main
+                  </h3>
+                  <ChevronRight className="size-3 text-muted-foreground/70 transition-transform duration-200 group-data-[state=open]/channels:rotate-90" />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ChannelList />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </ScrollArea>
+
+        {/* Members Section - Pinned to Bottom */}
+        <div className="shrink-0 border-t bg-muted/5 py-4 max-h-[40vh] flex flex-col">
+          <Collapsible defaultOpen className="group/members flex flex-col min-h-0">
+            <CollapsibleTrigger asChild>
+              <div className="px-4 mb-2 flex items-center justify-between group cursor-pointer shrink-0 select-none">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
+                  Members
+                </h3>
+                <ChevronRight className="size-3 text-muted-foreground/70 transition-transform duration-200 group-data-[state=open]/members:rotate-90" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+              <ScrollArea className="h-full max-h-[30vh] px-2">
+                <MembersList />
+              </ScrollArea>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        {/* The content from index.tsx will be rendered here */}
+      <div className="flex flex-1 flex-col min-w-0 bg-background">
         <Outlet />
-      </main>
+      </div>
     </div>
   );
 }

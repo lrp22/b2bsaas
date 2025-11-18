@@ -4,6 +4,7 @@ import { db } from "@b2bsaas/db";
 import { channel } from "@b2bsaas/db/schema/channel";
 import { and, eq } from "drizzle-orm";
 import { member } from "@b2bsaas/db/schema/auth";
+import { ORPCError } from "@orpc/server";
 
 // --- The transformation logic from the example ---
 function transformChannelName(name: string): string {
@@ -67,8 +68,7 @@ export const channelRouter = {
 
       return newChannel;
     }),
-  getById: protectedProcedure
-    // 1. UPDATE THE INPUT: Now we require both IDs.
+ getById: protectedProcedure
     .input(
       z.object({
         channelId: z.string(),
@@ -76,8 +76,7 @@ export const channelRouter = {
       })
     )
     .handler(async ({ input, context }) => {
-      // 2. CRITICAL SECURITY CHECK: First, verify the user is even a member
-      // of the workspace they are trying to access. This prevents URL manipulation.
+      // 1. Check Membership
       const [membership] = await db
         .select()
         .from(member)
@@ -89,25 +88,26 @@ export const channelRouter = {
         );
 
       if (!membership) {
-        throw new Error(
-          "UNAUTHORIZED: You are not a member of this workspace."
-        );
+        throw new ORPCError("FORBIDDEN", {
+          message: "You are not a member of this workspace.",
+        });
       }
 
-      // 3. SECURE QUERY: Now that we know the user belongs to the workspace,
-      // we can safely query for the channel using the workspaceId from the input.
+      // 2. Fetch Channel
       const [foundChannel] = await db
         .select()
         .from(channel)
         .where(
           and(
             eq(channel.id, input.channelId),
-            eq(channel.organizationId, input.workspaceId) // Use the ID from the input
+            eq(channel.organizationId, input.workspaceId)
           )
         );
 
       if (!foundChannel) {
-        throw new Error("Channel not found.");
+        throw new ORPCError("NOT_FOUND", {
+          message: "Channel not found.",
+        });
       }
 
       return foundChannel;

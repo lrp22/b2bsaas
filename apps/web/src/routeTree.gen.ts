@@ -16,6 +16,7 @@ import { Route as DashboardWorkspaceRouteRouteImport } from './routes/_dashboard
 import { Route as DashboardWorkspaceIndexRouteImport } from './routes/_dashboard/workspace/index'
 import { Route as DashboardWorkspaceAccountRouteImport } from './routes/_dashboard/workspace/account'
 import { Route as DashboardWorkspaceWorkspaceIdRouteRouteImport } from './routes/_dashboard/workspace/$workspaceId/route'
+import { Route as DashboardWorkspaceWorkspaceIdIndexRouteImport } from './routes/_dashboard/workspace/$workspaceId/index'
 import { Route as DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRouteImport } from './routes/_dashboard/workspace/$workspaceId/channel/$channelId/index'
 
 const TodosRoute = TodosRouteImport.update({
@@ -55,6 +56,12 @@ const DashboardWorkspaceWorkspaceIdRouteRoute =
     path: '/$workspaceId',
     getParentRoute: () => DashboardWorkspaceRouteRoute,
   } as any)
+const DashboardWorkspaceWorkspaceIdIndexRoute =
+  DashboardWorkspaceWorkspaceIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardWorkspaceWorkspaceIdRouteRoute,
+  } as any)
 const DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute =
   DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRouteImport.update({
     id: '/channel/$channelId/',
@@ -70,15 +77,16 @@ export interface FileRoutesByFullPath {
   '/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace/': typeof DashboardWorkspaceIndexRoute
+  '/workspace/$workspaceId/': typeof DashboardWorkspaceWorkspaceIdIndexRoute
   '/workspace/$workspaceId/channel/$channelId': typeof DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
-  '/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   '/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/workspace': typeof DashboardWorkspaceIndexRoute
+  '/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdIndexRoute
   '/workspace/$workspaceId/channel/$channelId': typeof DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute
 }
 export interface FileRoutesById {
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/_dashboard/workspace/$workspaceId': typeof DashboardWorkspaceWorkspaceIdRouteRouteWithChildren
   '/_dashboard/workspace/account': typeof DashboardWorkspaceAccountRoute
   '/_dashboard/workspace/': typeof DashboardWorkspaceIndexRoute
+  '/_dashboard/workspace/$workspaceId/': typeof DashboardWorkspaceWorkspaceIdIndexRoute
   '/_dashboard/workspace/$workspaceId/channel/$channelId/': typeof DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -102,15 +111,16 @@ export interface FileRouteTypes {
     | '/workspace/$workspaceId'
     | '/workspace/account'
     | '/workspace/'
+    | '/workspace/$workspaceId/'
     | '/workspace/$workspaceId/channel/$channelId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/todos'
-    | '/workspace/$workspaceId'
     | '/workspace/account'
     | '/workspace'
+    | '/workspace/$workspaceId'
     | '/workspace/$workspaceId/channel/$channelId'
   id:
     | '__root__'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/_dashboard/workspace/$workspaceId'
     | '/_dashboard/workspace/account'
     | '/_dashboard/workspace/'
+    | '/_dashboard/workspace/$workspaceId/'
     | '/_dashboard/workspace/$workspaceId/channel/$channelId/'
   fileRoutesById: FileRoutesById
 }
@@ -182,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWorkspaceWorkspaceIdRouteRouteImport
       parentRoute: typeof DashboardWorkspaceRouteRoute
     }
+    '/_dashboard/workspace/$workspaceId/': {
+      id: '/_dashboard/workspace/$workspaceId/'
+      path: '/'
+      fullPath: '/workspace/$workspaceId/'
+      preLoaderRoute: typeof DashboardWorkspaceWorkspaceIdIndexRouteImport
+      parentRoute: typeof DashboardWorkspaceWorkspaceIdRouteRoute
+    }
     '/_dashboard/workspace/$workspaceId/channel/$channelId/': {
       id: '/_dashboard/workspace/$workspaceId/channel/$channelId/'
       path: '/channel/$channelId'
@@ -193,11 +211,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardWorkspaceWorkspaceIdRouteRouteChildren {
+  DashboardWorkspaceWorkspaceIdIndexRoute: typeof DashboardWorkspaceWorkspaceIdIndexRoute
   DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute: typeof DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute
 }
 
 const DashboardWorkspaceWorkspaceIdRouteRouteChildren: DashboardWorkspaceWorkspaceIdRouteRouteChildren =
   {
+    DashboardWorkspaceWorkspaceIdIndexRoute:
+      DashboardWorkspaceWorkspaceIdIndexRoute,
     DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute:
       DashboardWorkspaceWorkspaceIdChannelChannelIdIndexRoute,
   }

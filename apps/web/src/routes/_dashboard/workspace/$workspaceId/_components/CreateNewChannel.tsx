@@ -6,32 +6,46 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { orpc, queryClient } from "@/utils/orpc";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { useParams, useNavigate } from "@tanstack/react-router";
 
-// --- Form logic can live inside this component file ---
 const createChannelSchema = z.object({
-  name: z.string().min(2, "Channel name must be at least 2 characters."),
+  name: z.string().min(1, "Name is required"),
 });
 
-function CreateChannelForm({ setOpen }: { setOpen: (open: boolean) => void }) {
+// ADDED: trigger prop
+export function CreateNewChannel({ trigger }: { trigger?: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const { workspaceId } = useParams({
+    from: "/_dashboard/workspace/$workspaceId",
+  });
+  const navigate = useNavigate();
+
   const createChannel = useMutation(
     orpc.channel.create.mutationOptions({
-      onSuccess: () => {
-        toast.success("Channel created!");
+      onSuccess: (data) => {
         queryClient.invalidateQueries({
-          queryKey: orpc.channel.listByWorkspace.queryOptions().queryKey,
+          queryKey: orpc.channel.listByWorkspace.key({
+            input: { workspaceId },
+          }),
         });
+        toast.success("Channel created");
         setOpen(false);
+        navigate({
+          to: "/workspace/$workspaceId/channel/$channelId",
+          params: { workspaceId, channelId: data.id },
+        });
       },
       onError: (error) => {
-        toast.error(error.message || "Failed to create channel.");
+        toast.error(error.message);
       },
     })
   );
@@ -40,55 +54,64 @@ function CreateChannelForm({ setOpen }: { setOpen: (open: boolean) => void }) {
     defaultValues: { name: "" },
     validators: { onChange: createChannelSchema },
     onSubmit: async ({ value }) => {
-      createChannel.mutate({ name: value.name });
+      await createChannel.mutateAsync({ name: value.name });
     },
   });
 
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-    >
-      <form.Field
-        name="name"
-        children={(field) => (
-          <Field>
-            <FieldLabel>Channel Name</FieldLabel>
-            <Input
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-              placeholder="e.g. product-updates"
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      />
-      <Button type="submit" disabled={createChannel.isPending}>
-        {createChannel.isPending ? "Creating..." : "Create Channel"}
-      </Button>
-    </form>
-  );
-}
-
-// --- This is the main, self-contained component ---
-export function CreateNewChannel() {
-  const [isOpen, setOpen] = React.useState(false);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>+ Create Channel</Button>
+        {/* Use custom trigger if provided, otherwise default sidebar button */}
+        {trigger ? (
+          trigger
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full justify-start text-muted-foreground hover:text-foreground bg-background/50 border-dashed"
+          >
+            <Plus className="mr-2 size-4" />
+            Add Channel
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a new channel</DialogTitle>
+          <DialogTitle>Create Channel</DialogTitle>
         </DialogHeader>
-        <CreateChannelForm setOpen={setOpen} />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="space-y-4"
+        >
+          <form.Field
+            name="name"
+            children={(field) => (
+              <Field>
+                <FieldLabel>Channel Name</FieldLabel>
+                <Input
+                  placeholder="e.g. marketing"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+                {field.state.meta.errors ? (
+                  <p className="text-sm text-destructive mt-1">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                ) : null}
+              </Field>
+            )}
+          />
+          <div className="flex justify-end">
+            <Button type="submit" disabled={createChannel.isPending}>
+              {createChannel.isPending ? "Creating..." : "Create Channel"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

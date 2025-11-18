@@ -1,4 +1,7 @@
 import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { message } from "./message";
+import { channel } from "./channel";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -120,3 +123,58 @@ export const invitation = pgTable("invitation", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 });
+
+export const userRelations = relations(user, ({ many }) => ({
+  accounts: many(account),
+  sessions: many(session),
+  members: many(member),      // User belongs to many organizations
+  messages: many(message),    // NEW: User has sent many messages
+  invitations: many(invitation), // User has sent many invitations (as inviter)
+}));
+
+// 2. Account Relations (OAuth)
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+// 3. Session Relations
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+// 4. Member Relations (Link between User and Organization)
+export const memberRelations = relations(member, ({ one }) => ({
+  user: one(user, {
+    fields: [member.userId],
+    references: [user.id],
+  }),
+  organization: one(organization, {
+    fields: [member.organizationId],
+    references: [organization.id],
+  }),
+}));
+
+// 5. Organization Relations
+export const organizationRelations = relations(organization, ({ many }) => ({
+  members: many(member),
+  invitations: many(invitation),
+  channels: many(channel),    // Organization has many channels
+}));
+
+// 6. Invitation Relations
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  organization: one(organization, {
+    fields: [invitation.organizationId],
+    references: [organization.id],
+  }),
+  inviter: one(user, {
+    fields: [invitation.inviterId],
+    references: [user.id],
+  }),
+}));

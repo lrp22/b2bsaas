@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { workspaceRouter } from "./workspace";
 import { channelRouter } from "./channel";
 import { membersRouter } from "./members";
+import { messageRouter } from "./messages";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -17,6 +18,7 @@ export const appRouter = {
   workspace: workspaceRouter,
   channel: channelRouter,
   members: membersRouter,
+  message: messageRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { protectedProcedure } from "../index";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import { ORPCError } from "@orpc/server";
 
 export const workspaceRouter = {
   // List organizations for the current user
@@ -155,5 +156,39 @@ export const workspaceRouter = {
 
       // 3. RETURN SUCCESS: Send a simple success message back to the client.
       return { success: true };
+    }),
+  get: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      // 1. Security Check: Is user a member?
+      const [membership] = await db
+        .select()
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, context.session.user.id),
+            eq(member.organizationId, input.id)
+          )
+        );
+
+      if (!membership) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "You are not a member of this workspace",
+        });
+      }
+
+      // 2. Fetch Workspace
+      const [org] = await db
+        .select()
+        .from(organization)
+        .where(eq(organization.id, input.id));
+
+      if (!org) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Workspace not found",
+        });
+      }
+
+      return org;
     }),
 };
