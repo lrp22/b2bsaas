@@ -2,7 +2,8 @@ import { protectedProcedure } from "../index";
 import { z } from "zod";
 import { db } from "@b2bsaas/db";
 import { channel } from "@b2bsaas/db/schema/channel";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { member } from "@b2bsaas/db/schema/auth";
 
 // --- The transformation logic from the example ---
 function transformChannelName(name: string): string {
@@ -65,5 +66,50 @@ export const channelRouter = {
         .returning();
 
       return newChannel;
+    }),
+  getById: protectedProcedure
+    // 1. UPDATE THE INPUT: Now we require both IDs.
+    .input(
+      z.object({
+        channelId: z.string(),
+        workspaceId: z.string(),
+      })
+    )
+    .handler(async ({ input, context }) => {
+      // 2. CRITICAL SECURITY CHECK: First, verify the user is even a member
+      // of the workspace they are trying to access. This prevents URL manipulation.
+      const [membership] = await db
+        .select()
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, context.session.user.id),
+            eq(member.organizationId, input.workspaceId)
+          )
+        );
+
+      if (!membership) {
+        throw new Error(
+          "UNAUTHORIZED: You are not a member of this workspace."
+        );
+      }
+
+      // 3. SECURE QUERY: Now that we know the user belongs to the workspace,
+      // we can safely query for the channel using the workspaceId from the input.
+      const [foundChannel] = await db
+        .select()
+        .from(channel)
+        .where(
+          and(
+            eq(channel.id, input.channelId),
+            eq(channel.organizationId, input.workspaceId) // Use the ID from the input
+          )
+        );
+
+      if (!foundChannel) {
+        throw new Error("Channel not found.");
+      }
+
+      return foundChannel;
     }),
 };
