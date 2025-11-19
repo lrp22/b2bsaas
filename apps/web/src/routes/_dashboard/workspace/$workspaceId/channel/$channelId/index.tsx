@@ -6,19 +6,20 @@ import { MessageInputForm } from "./_components/message/MessageInputForm";
 export const Route = createFileRoute(
   "/_dashboard/workspace/$workspaceId/channel/$channelId/"
 )({
-  component: RouteComponent,
+  component: ChannelPage,
 });
 
-function RouteComponent() {
+function ChannelPage() {
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-background">
+      {/* Fixed Header */}
       <ChannelHeader />
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <MessageList />
-      </div>
-      <div className="border-t bg-background p-4">
-        <MessageInputForm />
-      </div>
+
+      {/* Scrollable List - flex-1 makes it take all remaining space */}
+      <MessageList />
+
+      {/* Fixed Input */}
+      <MessageInputForm />
     </div>
   );
 }

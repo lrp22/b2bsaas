@@ -34,6 +34,7 @@
     "@tiptap/extension-code-block-lowlight": "^3.10.8",
     "@tiptap/extension-placeholder": "^3.10.8",
     "@tiptap/extension-text-align": "^3.10.8",
+    "@tiptap/html": "^3.10.8",
     "@tiptap/pm": "^3.10.8",
     "@tiptap/react": "^3.10.8",
     "@tiptap/starter-kit": "^3.10.8",

@@ -1,69 +1,57 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { orpc } from "@/utils/orpc";
-import { Button } from "@/components/ui/button";
-import { Plus, LayoutGrid } from "lucide-react";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-// We reuse the CreateWorkspace trigger logic here
-import { CreateWorkspace } from "../../_components/CreateWorkspace";
+import { Hash } from "lucide-react";
+import { CreateNewChannel } from "./_components/CreateNewChannel";
 
 export const Route = createFileRoute("/_dashboard/workspace/$workspaceId/")({
-  component: WorkspaceListIndexPage,
-  // Logic: Redirect to the first workspace if one exists
-  beforeLoad: async ({ context }) => {
-    try {
-      // Fetch user's workspaces
-      const workspaces = await context.queryClient.fetchQuery(
-        orpc.workspace.list.queryOptions()
-      );
+  loader: async ({ context, params }) => {
+    const channels = await context.queryClient.fetchQuery(
+      context.orpc.channel.listByWorkspace.queryOptions({
+        // FIX: Wrap in input here as well
+        input: {
+          workspaceId: params.workspaceId,
+        },
+      })
+    );
 
-      // If they have at least one, go to it immediately
-      if (workspaces.length > 0) {
-        throw redirect({
-          to: "/workspace/$workspaceId",
-          params: { workspaceId: workspaces[0].id },
-        });
-      }
-    } catch (e) {
-      // Allow the redirect to happen
-      if (e instanceof Response || (typeof e === 'object' && e !== null && 'isRedirect' in e)) {
-         throw e;
-      }
-      // If fetch fails or no workspaces, show the empty page below
+    if (channels.length > 0) {
+      throw redirect({
+        to: "/workspace/$workspaceId/channel/$channelId",
+        params: {
+          workspaceId: params.workspaceId,
+          channelId: channels[0].id,
+        },
+      });
     }
+
+    return { hasChannels: false };
   },
+  component: WorkspaceHome,
 });
 
-function WorkspaceListIndexPage() {
+function WorkspaceHome() {
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-muted/10 p-4">
+    <div className="h-full flex-1 flex flex-col items-center justify-center bg-muted/10">
       <Empty>
         <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <LayoutGrid className="size-6 text-muted-foreground" />
+          <EmptyMedia>
+            <Hash className="size-10 text-muted-foreground" />
           </EmptyMedia>
-          <EmptyTitle>No Workspaces Found</EmptyTitle>
+          <EmptyTitle>No Channels Found</EmptyTitle>
           <EmptyDescription>
-            You are not a member of any workspace yet. Create one to get started.
+            This workspace doesn't have any channels yet. Create one to start
+            chatting.
           </EmptyDescription>
         </EmptyHeader>
-        <EmptyContent>
-           {/* Use the CreateWorkspace Dialog but with a big primary button */}
-           <CreateWorkspace 
-             trigger={
-               <Button size="lg">
-                 <Plus className="mr-2 size-4" />
-                 Create New Workspace
-               </Button>
-             } 
-           />
-        </EmptyContent>
+        <div className="mt-4">
+          <CreateNewChannel />
+        </div>
       </Empty>
     </div>
   );

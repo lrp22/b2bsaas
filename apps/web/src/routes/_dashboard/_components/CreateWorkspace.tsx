@@ -1,5 +1,3 @@
-// apps/web/src/routes/_dashboard/_components/CreateWorkspace.tsx
-
 import { CreateWorkspaceForm } from "@/components/forms/CreateWorkspaceForm";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,14 +37,15 @@ export function CreateWorkspace() {
           <p>Create a new workspace</p>
         </TooltipContent>
       </Tooltip>
-      {/* It's good practice to include DialogContent for the dialog to display something when opened */}
-      <DialogContent className="sm:max-w-[425px] ">
+      
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Workspace</DialogTitle>
           <DialogDescription>
             Create a new workspace to get started
           </DialogDescription>
         </DialogHeader>
+        {/* FIX: Pass setOpen instead of onSuccess */}
         <CreateWorkspaceForm setOpen={setOpen} />
       </DialogContent>
     </Dialog>

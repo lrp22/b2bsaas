@@ -2,26 +2,26 @@ import { useForm } from "@tanstack/react-form";
 import { orpc, queryClient } from "@/utils/orpc";
 import { useMutation } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-// FIXED: Ensure this file exists in the same directory
 import { MessageComposer } from "./MessageComposer";
 import { toast } from "sonner";
 
 export function MessageInputForm() {
-  // FIXED: Added trailing slash to match strict router types
-  const { channelId } = useParams({
+  const { workspaceId, channelId } = useParams({
     from: "/_dashboard/workspace/$workspaceId/channel/$channelId/",
   });
 
-  const createMessage = useMutation(
+  const { mutateAsync, isPending } = useMutation(
+    // FIX 1: Change 'messages' to 'message' to match your API router definition
     orpc.message.create.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
+          // FIX 1: Change 'messages' to 'message' here as well
           queryKey: orpc.message.list.key({ input: { channelId } }),
         });
       },
-      onError: (err) => {
-        toast.error("Failed to send message");
-        console.error(err);
+      // FIX 2: Explicitly type the error
+      onError: (error: Error) => {
+        toast.error("Failed to send message: " + error.message);
       },
     })
   );
@@ -30,24 +30,25 @@ export function MessageInputForm() {
     defaultValues: {
       content: "",
     },
-    onSubmit: async ({ value, formApi }) => {
-      if (!value.content || value.content === "{}") return;
+    onSubmit: async ({ value }) => {
+      if (!value.content || value.content.trim() === "") return;
 
       try {
-        await createMessage.mutateAsync({
-          channelId,
+        // Now that the router path is correct, this input will match the type definition
+        await mutateAsync({
           content: value.content,
+          channelId,
+          workspaceId,
         });
-        // Reset form after success
-        formApi.reset();
+        form.reset();
       } catch (e) {
-        // Error handled in mutation options
+        console.error(e);
       }
     },
   });
 
   return (
-    <div className="p-4 pt-2">
+    <div className="p-4 bg-background">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -62,7 +63,7 @@ export function MessageInputForm() {
               value={field.state.value}
               onChange={field.handleChange}
               onSubmit={form.handleSubmit}
-              isPending={createMessage.isPending}
+              isPending={isPending}
             />
           )}
         />

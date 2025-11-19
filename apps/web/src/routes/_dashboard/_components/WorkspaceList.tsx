@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -6,83 +5,85 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { orpc, queryClient } from "@/utils/orpc";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { orpc } from "@/utils/orpc";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, useParams } from "@tanstack/react-router";
+import { CreateWorkspace } from "./CreateWorkspace";
 
-const colorCombinations = [
-  "bg-blue-500 hover:bg-blue-600 text-white",
-  "bg-emerald-500 hover:bg-emerald-600 text-white",
-  "bg-purple-500 hover:bg-purple-600 text-white",
-  "bg-amber-500 hover:bg-amber-600 text-white",
-  "bg-rose-500 hover:bg-rose-600 text-white",
-  "bg-indigo-500 hover:bg-indigo-600 text-white",
-  "bg-cyan-500 hover:bg-cyan-600 text-white",
-  "bg-pink-500 hover:bg-pink-600 text-white",
+// Color generator
+const COLORS = [
+  "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-green-500", 
+  "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500", 
+  "bg-indigo-500", "bg-violet-500", "bg-purple-500", "bg-pink-500", 
+  "bg-rose-500"
 ];
 
 const getWorkspaceColor = (id: string) => {
-  const charSum = id
-    .split("")
-    .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const colorIndex = charSum % colorCombinations.length;
-  return colorCombinations[colorIndex];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return COLORS[Math.abs(hash % COLORS.length)];
 };
 
 export function WorkspaceList() {
-  const {
-    data: { workspaces, currentWorkspace },
-  } = useSuspenseQuery(orpc.workspace.list.queryOptions());
+  const params = useParams({ strict: false });
+  const currentWorkspaceId = (params as any)?.workspaceId;
 
-  const switchWorkspace = useMutation(
-    orpc.workspace.switch.mutationOptions({
-      onSuccess: () => {
-        toast.success("Switched workspace");
-        queryClient.invalidateQueries({
-          queryKey: orpc.workspace.list.queryOptions().queryKey,
-        });
-      },
-      onError: (error) => {
-        toast.error(error.message || "Failed to switch workspace");
-      },
-    })
+  const { data } = useSuspenseQuery(
+    orpc.workspace.list.queryOptions()
   );
+  const workspaces = data.workspaces;
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col gap-2">
-        {workspaces.map((ws) => {
-          const isActive = currentWorkspace.id === ws.id;
+    <nav className="flex flex-col items-center gap-3 py-4 w-full">
+      <TooltipProvider delayDuration={0}>
+        {workspaces.map((workspace) => {
+          const isActive = currentWorkspaceId === workspace.id;
+          const colorClass = getWorkspaceColor(workspace.id);
 
           return (
-            <Tooltip key={ws.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => {
-                    if (!isActive) {
-                      switchWorkspace.mutate({ organizationId: ws.id });
-                    }
-                  }}
-                  className={cn(
-                    "size-12 transition-all duration-200",
-                    getWorkspaceColor(ws.id),
-                    isActive ? "rounded-lg" : "rounded-xl hover:rounded-lg"
-                  )}
-                  size="icon"
-                  disabled={isActive || switchWorkspace.isPending}
-                >
-                  <span className="text-sm font-semibold">{ws.avatar} </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>
-                  {ws.name} {isActive && "(Current)"}{" "}
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            <Link
+              key={workspace.id}
+              to="/workspace/$workspaceId"
+              params={{ workspaceId: workspace.id }}
+              className="contents"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className={cn(
+                      // Base styles matching CreateWorkspace dimensions
+                      "flex items-center justify-center size-12 rounded-xl transition-all duration-200 overflow-hidden cursor-pointer text-white shadow-sm hover:shadow-md",
+                      // Hover effect
+                      "hover:rounded-lg",
+                      // Dynamic Color
+                      colorClass,
+                      // Active State Ring
+                      isActive && "ring-2 ring-offset-2 ring-offset-background ring-foreground"
+                    )}
+                  >
+                    <span className="font-bold text-xl leading-none select-none">
+                      {workspace.name.substring(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium ml-2 z-50">
+                  {workspace.name}
+                </TooltipContent>
+              </Tooltip>
+            </Link>
           );
         })}
-      </div>
-    </TooltipProvider>
+
+        {/* Divider */}
+        <div className="w-8 h-px bg-border my-1" />
+
+        {/* Single Create Workspace Button */}
+        <div className="flex justify-center w-full">
+          <CreateWorkspace />
+        </div>
+      </TooltipProvider>
+    </nav>
   );
 }
