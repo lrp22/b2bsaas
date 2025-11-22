@@ -21,15 +21,16 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@orpc/server": "catalog:",
+    "@b2bsaas/auth": "workspace:*",
+    "@b2bsaas/db": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
-    "hono": "catalog:",
-    "drizzle-orm": "catalog:",
     "dotenv": "catalog:",
-    "zod": "catalog:",
-    "@b2bsaas/auth": "workspace:*",
-    "@b2bsaas/db": "workspace:*"
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "rate-limiter-flexible": "^8.2.1",
+    "zod": "catalog:"
   }
 }

@@ -11,15 +11,14 @@ export function MessageInputForm() {
   });
 
   const { mutateAsync, isPending } = useMutation(
-    // FIX 1: Change 'messages' to 'message' to match your API router definition
     orpc.message.create.mutationOptions({
       onSuccess: () => {
+        // Invalidate queries to refetch the list
+        // Fuzzy matching works here: invalidating { channelId } will catch { channelId, limit: 20 }
         queryClient.invalidateQueries({
-          // FIX 1: Change 'messages' to 'message' here as well
           queryKey: orpc.message.list.key({ input: { channelId } }),
         });
       },
-      // FIX 2: Explicitly type the error
       onError: (error: Error) => {
         toast.error("Failed to send message: " + error.message);
       },
@@ -34,7 +33,6 @@ export function MessageInputForm() {
       if (!value.content || value.content.trim() === "") return;
 
       try {
-        // Now that the router path is correct, this input will match the type definition
         await mutateAsync({
           content: value.content,
           channelId,
@@ -48,7 +46,7 @@ export function MessageInputForm() {
   });
 
   return (
-    <div className="p-4 bg-background">
+    <div className="p-4 bg-background border-t">
       <form
         onSubmit={(e) => {
           e.preventDefault();

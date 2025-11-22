@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useMemo, useLayoutEffect } from "react";
 import { Loader2, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MessageItem } from "./message/MessageItem";
+import { cn } from "@/lib/utils";
 
 export function MessageList() {
   const { channelId } = useParams({
@@ -12,9 +13,13 @@ export function MessageList() {
   });
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const bottomAnchorRef = useRef<HTMLDivElement>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // State to track if the user is at the bottom of the list
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  // State to track if new messages arrived while scrolled up
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  // Track previous message count to detect new arrivals
+  const prevMessageCountRef = useRef(0);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
     useInfiniteQuery(
@@ -34,49 +39,81 @@ export function MessageList() {
     return [...data.pages].reverse().flatMap((page) => page.items);
   }, [data]);
 
-  const scrollToBottom = (instant = false) => {
-    if (bottomAnchorRef.current) {
-      bottomAnchorRef.current.scrollIntoView({
-        behavior: instant ? "auto" : "smooth",
-        block: "end",
+  // Scroll to bottom helper
+  const scrollToBottom = (behavior: "auto" | "smooth" = "auto") => {
+    if (scrollContainerRef.current) {
+      const { scrollHeight, clientHeight } = scrollContainerRef.current;
+      scrollContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior,
       });
     }
   };
 
+  // 1. Handle Scroll Events (Infinite Load & "Sticky" state tracking)
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } =
       scrollContainerRef.current;
+
+    // Distance from the bottom of the scroll container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const isAtBottom = distanceFromBottom < 100;
 
-    setShowScrollButton(!isAtBottom);
-    setShouldAutoScroll(isAtBottom);
+    // Threshold to consider "at bottom" (e.g., 100px)
+    const isCloseToBottom = distanceFromBottom < 100;
 
+    setIsAtBottom(isCloseToBottom);
+
+    if (isCloseToBottom) {
+      setHasNewMessages(false); // Clear notification if we are at bottom
+    }
+
+    // Load previous messages when reaching top
     if (scrollTop === 0 && hasNextPage && !isFetchingNextPage) {
+      // Capture current scroll height before loading new data to maintain position
       const oldScrollHeight = scrollHeight;
+
       fetchNextPage().then(() => {
-        if (scrollContainerRef.current) {
-          const newScrollHeight = scrollContainerRef.current.scrollHeight;
-          scrollContainerRef.current.scrollTop =
-            newScrollHeight - oldScrollHeight;
-        }
+        // After render, adjust scroll to keep position stable
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            const newScrollHeight = scrollContainerRef.current.scrollHeight;
+            scrollContainerRef.current.scrollTop =
+              newScrollHeight - oldScrollHeight;
+          }
+        });
       });
     }
   };
 
+  // 2. Handle New Messages (Auto-scroll)
   useLayoutEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom(true);
-    }
-  }, [channelId]);
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
 
-  useEffect(() => {
-    if (messages.length > 0 && shouldAutoScroll) {
-      scrollToBottom(false);
+    // If messages increased (new message arrived)
+    if (currentCount > prevCount) {
+      if (isAtBottom) {
+        // If we were already at bottom, snap to new bottom
+        scrollToBottom("auto");
+      } else {
+        // If we were scrolled up, show "New Messages" indicator
+        setHasNewMessages(true);
+      }
     }
-  }, [messages.length, shouldAutoScroll]);
+
+    prevMessageCountRef.current = currentCount;
+  }, [messages.length, isAtBottom]);
+
+  // 3. Initial Load Scroll
+  useEffect(() => {
+    if (messages.length > 0 && prevMessageCountRef.current === 0) {
+      scrollToBottom("auto");
+      // Initialize ref to avoid triggering "New Messages" on first load
+      prevMessageCountRef.current = messages.length;
+    }
+  }, [channelId, messages.length]);
 
   if (isPending) {
     return (
@@ -91,7 +128,6 @@ export function MessageList() {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        // FIX: Reduced spacing from space-y-6 to space-y-0.5 for compact chat look
         className="flex-1 overflow-y-auto p-4 space-y-0.5"
       >
         {isFetchingNextPage && (
@@ -108,23 +144,38 @@ export function MessageList() {
         ) : (
           messages.map((msg) => <MessageItem key={msg.id} message={msg} />)
         )}
-
-        <div ref={bottomAnchorRef} className="h-px w-full" />
       </div>
 
-      {showScrollButton && (
+      {/* Floating "Go to Bottom" Button */}
+      <div
+        className={cn(
+          "absolute bottom-4 right-4 transition-all duration-300 transform",
+          !isAtBottom
+            ? "translate-y-0 opacity-100"
+            : "translate-y-10 opacity-0 pointer-events-none"
+        )}
+      >
         <Button
           size="icon"
-          variant="secondary"
-          className="absolute bottom-4 right-4 rounded-full shadow-lg z-10 animate-in fade-in"
+          variant={hasNewMessages ? "default" : "secondary"}
+          className={cn(
+            "rounded-full shadow-lg h-10 w-10",
+            hasNewMessages && "animate-bounce"
+          )}
           onClick={() => {
-            setShouldAutoScroll(true);
-            scrollToBottom(false);
+            scrollToBottom("smooth");
+            setHasNewMessages(false);
           }}
         >
           <ArrowDown className="size-4" />
+          {hasNewMessages && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+            </span>
+          )}
         </Button>
-      )}
+      </div>
     </div>
   );
 }

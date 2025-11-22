@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { organization } from "./auth";
@@ -16,18 +16,18 @@ export const channel = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => ({
+  (table) => ({
     // Unique name per organization
-    orgNameUnique: unique().on(t.organizationId, t.name),
+    orgNameUnique: unique().on(table.organizationId, table.name),
+    // Index for "List all channels in Org Y"
+    orgIdx: index("channel_org_idx").on(table.organizationId),
   })
 );
 
 export const channelRelations = relations(channel, ({ one, many }) => ({
-  // Relation to parent Organization
   organization: one(organization, {
     fields: [channel.organizationId],
     references: [organization.id],
   }),
-  // Relation to child Messages
   messages: many(message),
 }));

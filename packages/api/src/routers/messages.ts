@@ -6,9 +6,10 @@ import { channel } from "@b2bsaas/db/schema/channel";
 import { member } from "@b2bsaas/db/schema/auth";
 import { and, eq, desc } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
+import { strictLimiter, checkRateLimit } from "../lib/rate-limit";
 
 export const messageRouter = {
-  // 1. LIST MESSAGES (Protected)
+  // 1. LIST MESSAGES
   list: protectedProcedure
     .input(
       z.object({
@@ -18,45 +19,38 @@ export const messageRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      // --- SECURITY CHECK START ---
+      // --- OPTIMIZED SECURITY CHECK ---
+      // Instead of fetching Channel then fetching Member (2 queries),
+      // we join them to check if the user has access to this channel in 1 query.
+      const [access] = await db
+        .select({ channelId: channel.id })
+        .from(channel)
+        .innerJoin(
+          member,
+          and(
+            eq(channel.organizationId, member.organizationId),
+            eq(member.userId, context.session.user.id)
+          )
+        )
+        .where(eq(channel.id, input.channelId))
+        .limit(1);
 
-      // 1. Find the channel to identify which Workspace it belongs to
-      const channelData = await db.query.channel.findFirst({
-        where: eq(channel.id, input.channelId),
-        columns: { organizationId: true }, // Optimization: We only need the org ID
-      });
-
-      if (!channelData) {
-        throw new ORPCError("NOT_FOUND", { message: "Channel not found" });
-      }
-
-      // 2. Verify the user is a member of that Workspace
-      const isMember = await db.query.member.findFirst({
-        where: and(
-          eq(member.userId, context.session.user.id),
-          eq(member.organizationId, channelData.organizationId)
-        ),
-      });
-
-      if (!isMember) {
-        throw new ORPCError("FORBIDDEN", {
-          message: "You do not have permission to view this channel.",
+      if (!access) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Channel not found or you do not have access.",
         });
       }
 
-      // --- SECURITY CHECK END ---
-
-      // 3. Fetch messages
+      // 2. Fetch messages
       const items = await db.query.message.findMany({
         where: (table, { and, eq, lt }) =>
           and(
             eq(table.channelId, input.channelId),
-            // If cursor is provided, fetch items older than the cursor (pagination)
             input.cursor
               ? lt(table.createdAt, new Date(input.cursor))
               : undefined
           ),
-        limit: input.limit + 1, // Fetch one extra to check if there is a next page
+        limit: input.limit + 1,
         orderBy: [desc(message.createdAt)],
         with: {
           user: {
@@ -75,14 +69,13 @@ export const messageRouter = {
         nextCursor = nextItem?.createdAt.toISOString();
       }
 
-      // Return reversed (Oldest -> Newest) so the UI renders them top-to-bottom correctly
       return {
         items: items.reverse(),
         nextCursor,
       };
     }),
 
-  // 2. CREATE MESSAGE (Protected)
+  // 2. CREATE MESSAGE
   create: protectedProcedure
     .input(
       z.object({
@@ -92,35 +85,38 @@ export const messageRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      // 1. Security: Check Workspace Membership
-      const isMember = await db.query.member.findFirst({
-        where: and(
-          eq(member.userId, context.session.user.id),
-          eq(member.organizationId, input.workspaceId)
-        ),
-      });
+      // Rate Limit
+      await checkRateLimit(strictLimiter, context.session.user.id);
 
-      if (!isMember) {
+      // --- OPTIMIZED SECURITY CHECK ---
+      // Ensure:
+      // 1. Channel exists and belongs to the workspace provided
+      // 2. User is a member of that workspace
+      const [valid] = await db
+        .select({ id: channel.id })
+        .from(channel)
+        .innerJoin(
+          member,
+          and(
+            eq(member.organizationId, input.workspaceId),
+            eq(member.userId, context.session.user.id)
+          )
+        )
+        .where(
+          and(
+            eq(channel.id, input.channelId),
+            eq(channel.organizationId, input.workspaceId)
+          )
+        )
+        .limit(1);
+
+      if (!valid) {
         throw new ORPCError("FORBIDDEN", {
-          message: "You are not a member of this workspace",
+          message: "You cannot post to this channel.",
         });
       }
 
-      // 2. Security: Verify Channel Integrity (Ensure channel actually belongs to this workspace)
-      const channelData = await db.query.channel.findFirst({
-        where: and(
-          eq(channel.id, input.channelId),
-          eq(channel.organizationId, input.workspaceId)
-        ),
-      });
-
-      if (!channelData) {
-        throw new ORPCError("NOT_FOUND", {
-          message: "Channel not found in this workspace",
-        });
-      }
-
-      // 3. Insert Message
+      // Insert Message
       const [newMessage] = await db
         .insert(message)
         .values({
